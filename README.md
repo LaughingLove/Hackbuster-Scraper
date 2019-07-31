@@ -30,3 +30,9 @@ After you do this, then just do this command:
 
 `py main.py`
 
+## TODO
+
+- Initial check should send the most recent article and save it in a json or some sort of storage for the next check
+- On the next check, we get a list of most recent articles, and we find what index the saved article is in the list. If the saved article isn't at index `0`, then we pull information from each article starting at index `0` until the saved article's index. For example: if the saved article is found at index `2`, then we pull article information from indexs `0` and `1`.
+- Each article that we just pulled gets sent out in individual e-mails, with the article that was at index `0` now gets saved in a json, and the cycle continues indefinately
+
