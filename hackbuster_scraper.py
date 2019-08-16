@@ -7,11 +7,12 @@ class HackbusterScraper:
 
         with open('personal_config.json') as f:
             data = json.load(f)
-        if data['driver_browser'].lower() is "firefox":
+        print(data['driver_browser'].lower())
+        if data['driver_browser'].lower() == "firefox":
             self.browser = webdriver.Firefox()
-        elif data['driver_browser'].lower() is "chrome":
+        elif data['driver_browser'].lower() == "chrome":
             self.browser = webdriver.Chrome()
-        elif data['driver_browser'].lower() is "edge":
+        elif data['driver_browser'].lower() == "edge":
             self.browser = webdriver.Edge()
         else:
             self.browser = webdriver.Chrome()
