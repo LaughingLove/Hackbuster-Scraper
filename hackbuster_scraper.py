@@ -1,9 +1,9 @@
 from selenium import webdriver, common
 import time
-
+import json
 class HackbusterScraper:
     def __init__(self):
-        import json
+        
 
         with open('personal_config.json') as f:
             data = json.load(f)
@@ -17,23 +17,63 @@ class HackbusterScraper:
         else:
             self.browser = webdriver.Chrome()
         self.browser.get("https://hackbusters.com/recent")
+        self.browser.set_window_size(800,600)
+
+    def is_new(self):
+        with open('recent_article.json') as f:
+            article_info = json.load(f)
+
+        articles = self.browser.find_elements_by_class_name("ArticleRegular_articleWrap_2EPwi")
+        for i in range(0, len(articles) - 1):
+
+            title = articles[i].find_element_by_class_name("ArticleTitle_regular_1vl1D").text
+            if (title == article_info.get("title")) and i is 0:
+                return {"status": False}
+            elif title == article_info.get("title") and i is not 0:
+                index = i
+                return {"status": True, "index": index}
+    
+    def get_recent_articles(self):
+        with open('recent_article.json') as f:
+            recent_article = json.load(f)
+        articles = self.browser.find_elements_by_class_name("ArticleRegular_articleWrap_2EPwi")
+        index = self.is_new()['index']
+        article_information = []
+        for i in range(0, len(articles[:index]) - 1):
+            article_information.append(self.get_full_article(i))
+            # TODO: Will add this later
+            # if i is 0:
+            #     title = article_information[0]['title']
+            #     recent_article['title'] = title
+            #     with open('recent_article.json', 'w') as d:
+            #         json.dump(recent_article, d)
+        print(len(article_information))
+        return article_information
+
+
 
     def close_browser(self):
         time.sleep(2)
         self.browser.quit()
 
-    def get_article_page(self):
-        element = self.browser.find_element_by_class_name("ArticleLarge_featureWrap_1TJdN")
+    def get_article_page(self, index):
+        # Gets the most recent article and clicks on it, redirecting selenium to the article page
+        element = self.browser.find_elements_by_class_name("ArticleRegular_articleWrap_2EPwi")[index] # <--- First element
         header = element.find_element_by_tag_name("h4")
         
         time.sleep(1)
         header.click()
 
     def get_article_text_brief(self):
-        element = self.browser.find_element_by_class_name("ArticleLarge_featureWrap_1TJdN")
-        text = element.text
+        # element = self.browser.find_element_by_class_name("ArticleLarge_featureWrap_1TJdN")
+        articles = self.browser.find_elements_by_class_name("ArticleRegular_articleWrap_2EPwi")
+        #header = articles.find_elements_by_class_name("ArticleTitle_regular_1vl1D")
+        headers = []
+        for article in articles:
+            headers.append(article.find_element_by_class_name("ArticleTitle_regular_1vl1D").text)
+        # text = element.text
         self.close_browser()
-        return text
+        return headers
     
     def get_article_link(self):
         try:
@@ -45,9 +85,9 @@ class HackbusterScraper:
         self.close_browser()
         return nested_link
     
-    def get_full_article(self):
+    def get_full_article(self, index):
         time.sleep(1)
-        self.get_article_page()
+        self.get_article_page(index)
         image = self.browser.find_element_by_class_name("ArticleImage_xlarge_3coPE")
         # Getting image URL from this string: "url({url})"
         img_url = image.value_of_css_property("background-image")[5:][:-2]
@@ -85,4 +125,7 @@ class HackbusterScraper:
         self.close_browser()
         # Sending it out
         return everything_together
-    
+
+
+new_scrape = HackbusterScraper()
+print(new_scrape.get_recent_articles())
