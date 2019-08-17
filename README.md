@@ -1,5 +1,5 @@
 # Hackbuster Scraper to E-Mail
-### Checks hackbuster every 30 minutes for the newest article, and sends it to you via email
+### Checks hackbuster every hour for the newest articles, and sends it to you via email
 
 ## Setup
 
@@ -10,7 +10,8 @@ Create a `personal_config.json` file and set it up like this:
 ```json
 {
     "email": "youremail@email.com",
-    "password": "your smtp password here"
+    "password": "your smtp password here",
+    "driver_browser": "Firefox/Chrome/Edge"
 }
 ```
 
@@ -30,9 +31,6 @@ After you do this, then just do this command:
 
 `py main.py`
 
-## TODO
+This will run indefinitely
 
-- Initial check should send the most recent article and save it in a json or some sort of storage for the next check
-- On the next check, we get a list of most recent articles, and we find what index the saved article is in the list. If the saved article isn't at index `0`, then we pull information from each article starting at index `0` until the saved article's index. For example: if the saved article is found at index `2`, then we pull article information from indexs `0` and `1`.
-- Each article that we just pulled gets sent out in individual e-mails, with the article that was at index `0` now gets saved in a json, and the cycle continues indefinately
 

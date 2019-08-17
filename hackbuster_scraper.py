@@ -16,41 +16,63 @@ class HackbusterScraper:
             self.browser = webdriver.Edge()
         else:
             self.browser = webdriver.Chrome()
-        self.browser.get("https://hackbusters.com/recent")
-        self.browser.set_window_size(800,600)
+        try:
+            self.browser.get("https://hackbusters.com/recent")
+            time.sleep(3)
+            self.browser.set_window_size(800,600)
+        except Exception as e:
+            print("Getting error: {}".format(str(e)))
+            print("Retrying to connect to website in 10 seconds!")
+            time.sleep(10)
+            try:
+                self.browser.get("https://hackbusters.com/recent")
+                time.sleep(3)
+                self.browser.set_window_size(800,600)
+            except Exception as e:
+                print("Getting error: {}".format(str(e)))
+                print("Tried twice! Can't connect to website! Aborting....")
+                raise e
 
-    def is_new(self):
+
+    def is_new(self, from_main=False):
         with open('recent_article.json') as f:
             article_info = json.load(f)
 
         articles = self.browser.find_elements_by_class_name("ArticleRegular_articleWrap_2EPwi")
-        for i in range(0, len(articles) - 1):
+        if article_info['title'] == "":
+            if from_main:
+                # So that we don't have 2 browsers open
+                self.close_browser()
+            return {"status": True, "index": 0}
+        else:
+            for i in range(0, len(articles) - 1):
 
-            title = articles[i].find_element_by_class_name("ArticleTitle_regular_1vl1D").text
-            if (title == article_info.get("title")) and i is 0:
-                return {"status": False}
-            elif title == article_info.get("title") and i is not 0:
-                index = i
-                return {"status": True, "index": index}
+                title = articles[i].find_element_by_class_name("ArticleTitle_regular_1vl1D").text
+                if (title == article_info['title']) and i == 0:
+                    if from_main:
+                        self.close_browser()
+                    return {"status": False, "index": None}
+                elif (title == article_info['title']) and i != 0:
+                    index = i
+                    if from_main:
+                        self.close_browser()
+                    return {"status": True, "index": index}
     
-    def get_recent_articles(self):
+    def get_recent_articles(self, index):
         with open('recent_article.json') as f:
             recent_article = json.load(f)
         articles = self.browser.find_elements_by_class_name("ArticleRegular_articleWrap_2EPwi")
-        index = self.is_new()['index']
         article_information = []
-        for i in range(0, len(articles[:index]) - 1):
+        for i, a in enumerate(articles[:index if index > 0 else 1]):
             article_information.append(self.get_full_article(i))
-            # TODO: Will add this later
-            # if i is 0:
-            #     title = article_information[0]['title']
-            #     recent_article['title'] = title
-            #     with open('recent_article.json', 'w') as d:
-            #         json.dump(recent_article, d)
+            if i is 0:
+                title = article_information[0]['title']
+                recent_article['title'] = title
+                with open('recent_article.json', 'w') as d:
+                    json.dump(recent_article, d)
         print(len(article_information))
+        self.close_browser()
         return article_information
-
-
 
     def close_browser(self):
         time.sleep(2)
@@ -65,13 +87,10 @@ class HackbusterScraper:
         header.click()
 
     def get_article_text_brief(self):
-        # element = self.browser.find_element_by_class_name("ArticleLarge_featureWrap_1TJdN")
         articles = self.browser.find_elements_by_class_name("ArticleRegular_articleWrap_2EPwi")
-        #header = articles.find_elements_by_class_name("ArticleTitle_regular_1vl1D")
         headers = []
         for article in articles:
             headers.append(article.find_element_by_class_name("ArticleTitle_regular_1vl1D").text)
-        # text = element.text
         self.close_browser()
         return headers
     
@@ -79,10 +98,9 @@ class HackbusterScraper:
         try:
             self.browser.find_element_by_class_name("ArticleDetail_viewArticleBtn_VmdO0")
         except common.exceptions.NoSuchElementException:
-            self.get_article_page()
+            self.get_article_page(0)
         button_div = self.browser.find_element_by_class_name("ArticleDetail_viewArticleBtn_VmdO0")
         nested_link = button_div.find_element_by_tag_name("a").get_attribute("href")
-        self.close_browser()
         return nested_link
     
     def get_full_article(self, index):
@@ -103,7 +121,6 @@ class HackbusterScraper:
         paragraphs = content.find_elements_by_tag_name("p")
         
         final_text = ""
-        #p_list = []
         for p in paragraphs:
            #If it's not the last paragraph you can have 2 new lines
             if not paragraphs.index(p) == len(paragraphs) - 1:
@@ -111,7 +128,6 @@ class HackbusterScraper:
             else:
                 # If it is the end no new lines
                 final_text += "{}".format(p.text)
-            #p_list.append(p.text)
 
         # Packaging everything nice and neat into a dict
         everything_together = {
@@ -122,10 +138,6 @@ class HackbusterScraper:
             "url": self.get_article_link()
         }
 
-        self.close_browser()
+        self.browser.back()
         # Sending it out
         return everything_together
-
-
-new_scrape = HackbusterScraper()
-print(new_scrape.get_recent_articles())
